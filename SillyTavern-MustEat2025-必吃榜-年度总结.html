@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SillyTavern 2025 必吃榜 · 年度总结</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 引入特定字体 -->
+    <link rel="stylesheet" href="https://fontsapi.zeoseven.com/383/main/result.css">
+
+    <style>
+        /* SillyTavern 小工具 by.Villeay&Gemini&Claude&Deepseek 大概每年都能用（？） */  
+        /* 基础字体引入：Fredoka(标题英), Inter/Noto Sans SC(正文) */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Inter:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-base: #0f1016;
+            --bg-gradient-start: #13151f;
+            --bg-gradient-end: #090a0e;
+            --card-bg: rgba(28, 30, 38, 0.7);
+            --card-border: rgba(154, 106, 255, 0.2);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-main: #9a6aff; 
+            --accent-glow: rgba(154, 106, 255, 0.4);
+            --star-active: #ffd700;
+            --tag-bg: rgba(154, 106, 255, 0.15);
+            --btn-grad-start: #9a6aff;
+            --btn-grad-end: #7c3aed;
+            --svg-grad-stop1: #d946ef;
+            --svg-grad-stop2: #60a5fa;
+            /* 全局常规字体 */
+            --font-stack: 'Inter', 'Noto Sans SC', sans-serif;
+            /* User 名字专用圆体 */
+            --font-user: 'MaoKenTangYuan', 'Fredoka', cursive;
+            
+            --decoration-blob-1: #581c87;
+            --decoration-blob-2: #1e3a8a;
+            --user-name-color: #aebccf; 
+        }
+
+        [data-theme="day"] {
+            --bg-base: #fff8f9;
+            --bg-gradient-start: #fff0f5;
+            --bg-gradient-end: #f3f4f6;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 183, 178, 0.5);
+            --text-primary: #4a4a4a;
+            --text-secondary: #888888;
+            --accent-main: #ff8fa3; 
+            --accent-glow: rgba(255, 143, 163, 0.4);
+            --star-active: #ffb7b2;
+            --tag-bg: rgba(181, 234, 215, 0.4);
+            --btn-grad-start: #ff9aa2;
+            --btn-grad-end: #ffb7b2;
+            --svg-grad-stop1: #ff9a9e;
+            --svg-grad-stop2: #a18cd1;
+            --font-stack: 'Inter', 'Noto Sans SC', sans-serif;
+            --decoration-blob-1: #ffdac1;
+            --decoration-blob-2: #c7ceea;
+            --user-name-color: #7d8da1;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-primary);
+            font-family: var(--font-stack);
+            transition: all 0.5s ease;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .custom-input {
+            background: rgba(0,0,0,0.1);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-family: var(--font-stack);
+        }
+        [data-theme="day"] .custom-input {
+            background: rgba(255,255,255, 0.8);
+            border: 1px solid #ffdac1;
+        }
+
+        .type-selector.active {
+            background-color: var(--accent-main);
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 0 10px var(--accent-glow);
+            font-weight: bold;
+        }
+
+        .preset-tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: var(--bg-base);
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+        .preset-tag:hover {
+            opacity: 1;
+            border-color: var(--accent-main);
+            color: var(--accent-main);
+        }
+
+        /* html2canvas专用修复样式 */
+        .h2c-fix {
+            position: relative !important;
+            overflow: visible !important;
+        }
+
+        .h2c-text {
+            line-height: 1.2 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            position: relative;
+            transform: none !important;
+            vertical-align: top !important;
+        }
+
+        .h2c-name {
+            font-size: 24px !important;
+            line-height: 1.2 !important;
+            font-weight: 900 !important;
+            margin-bottom: 4px !important;
+            display: inline-block !important;
+            vertical-align: top !important;
+            height: auto !important; 
+            min-height: 28px !important;
+            overflow: visible !important;
+            word-break: break-all !important; 
+            font-family: 'Inter', 'Noto Sans SC', sans-serif !important;
+        }
+
+        .h2c-author {
+            font-size: 11px !important;
+            line-height: 1 !important;
+            opacity: 0.5 !important;
+            display: inline-block !important;
+            vertical-align: top !important;
+            height: 14px !important;
+            margin-left: 8px !important;
+            position: relative;
+            top: 4px !important;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif !important;
+        }
+
+        .h2c-stars {
+            display: flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            margin: 2px 0 16px 0 !important;
+            height: 18px !important;
+            position: relative;
+            line-height: 1 !important;
+        }
+
+        .h2c-star {
+            font-size: 14px !important;
+            line-height: 1 !important;
+            display: block !important;
+            width: 14px;
+            height: 14px;
+            vertical-align: top !important;
+        }
+
+        .h2c-tags {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            margin-bottom: 8px !important;
+            position: relative;
+            min-height: 22px !important;
+            line-height: 1 !important;
+            align-items: flex-start !important;
+        }
+
+        .h2c-tag {
+            font-size: 10px !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 3px 6px !important;
+            border-radius: 4px !important;
+            background: var(--tag-bg) !important;
+            color: var(--accent-main) !important;
+            font-weight: bold !important;
+            height: 18px !important;
+            position: relative;
+            vertical-align: top !important;
+            margin-top: 0 !important;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif !important;
+        }
+
+        .h2c-tag-text {
+            display: inline-block !important;
+            line-height: 1 !important;
+            vertical-align: top !important;
+            position: relative;
+            top: -1px !important;
+        }
+
+        .h2c-review {
+            font-size: 12px !important;
+            line-height: 1.4 !important; 
+            padding: 2px 0 2px 12px !important;
+            margin: 4px 0 0 0 !important; 
+            border-left: 2px solid var(--accent-main) !important;
+            display: block !important;
+            position: relative;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            min-height: 18px !important;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif !important;
+        }
+
+        .h2c-review-text {
+            display: inline !important;
+            position: relative;
+            line-height: 1.4 !important;
+        }
+
+        .h2c-type-badge {
+            position: absolute !important;
+            top: -5px !important;
+            right: -5px !important;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: var(--accent-main) !important;
+            color: white !important;
+            z-index: 10 !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+        }
+
+        .h2c-type-icon {
+            display: inline-block !important;
+            line-height: 1 !important;
+            vertical-align: top !important;
+            position: relative;
+            top: -1px !important;
+        }
+
+        .h2c-avatar {
+            width: 80px !important;
+            height: 80px !important;
+            border-radius: 12px !important;
+            background-size: cover !important;
+            background-position: center !important;
+            flex-shrink: 0 !important;
+            border: 1px solid var(--card-border) !important;
+            position: relative;
+            margin-top: 4px !important;
+        }
+
+        .h2c-content-wrapper {
+            flex: 1 !important;
+            min-width: 0 !important;
+            position: relative;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        /* Header 布局重构 */
+        .h2c-header-bottom {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-end !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            margin-top: -8px !important;
+            width: 100% !important;
+        }
+
+        .header-flex-wrapper {
+            display: flex !important; 
+            align-items: baseline !important; 
+            gap: 8px !important; 
+            flex: 1 1 auto !important;
+            min-width: 200px !important;
+        }
+
+        .h2c-user-box {
+            position: relative !important;
+            text-align: right !important;
+            flex-shrink: 0 !important;
+            margin-left: auto !important;
+            max-width: 100% !important;
+            padding-top: 4px !important;
+        }
+
+        .h2c-header-username {
+            font-size: 20px !important; 
+            line-height: 1.1 !important;
+            font-weight: 400 !important; 
+            font-family: var(--font-user) !important; 
+            color: var(--user-name-color) !important;
+            margin-top: 2px !important;
+            display: block !important;
+            position: relative;
+            height: auto !important;
+            overflow: visible !important;
+            padding-bottom: 0 !important;
+            opacity: 1 !important;
+            white-space: nowrap !important;
+        }
+
+        .h2c-grid-container {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+            position: relative;
+        }
+
+        .h2c-card {
+            background: var(--card-bg) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid var(--card-border) !important;
+            border-radius: 12px !important;
+            padding: 14px !important;
+            display: flex !important;
+            gap: 14px !important;
+            align-items: flex-start !important;
+            position: relative;
+            overflow: visible !important;
+        }
+
+        /* -------------------------------------------------------------------
+           核心修复：多人卡虚线框自动撑开
+           ------------------------------------------------------------------- */
+        .h2c-subchars {
+            font-size: 10px !important;
+            line-height: 1.2 !important; /* 稍微增加行高 */
+            padding: 3px 6px !important;
+            margin-top: 0px !important;
+            background: rgba(154, 106, 255, 0.1) !important;
+            border-radius: 4px !important;
+            
+            /* 关键修改：去除固定height，允许高度自适应 */
+            display: inline-flex !important;
+            height: auto !important;
+            min-height: 18px !important; 
+            white-space: normal !important; /* 允许换行 */
+            
+            align-items: baseline !important; /* 基线对齐，防止多行时图标浮在中间不好看 */
+            color: var(--accent-main) !important;
+            border: 1px dashed var(--accent-main) !important;
+            gap: 4px !important;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif !important;
+            max-width: 100% !important; /* 防止超出卡片 */
+        }
+
+        .h2c-subchars-text {
+            display: inline !important; /* 改为inline以便正常断行 */
+            line-height: 1.2 !important;
+            vertical-align: baseline !important;
+            position: relative;
+            top: 0 !important; /* 取消之前的微调 */
+            white-space: normal !important; /* 强制允许换行 */
+            word-break: break-all !important; /* 任意位置断行防止长字符撑破 */
+        }
+        
+        .h2c-group-icon {
+            display: inline-block !important;
+            line-height: 1 !important;
+            vertical-align: baseline !important;GENERATED
+            position: relative;
+            top: 1px !important; /* 图标稍微下沉一点对齐文字 */
+            font-size: 10px !important;
+            flex-shrink: 0 !important; /* 图标不许被挤扁 */
+        }
+
+        .animate-blob { animation: blob 7s infinite; }
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-center-avatar { display: flex; flex-direction: column; align-items: center; width: 100%; }
+            #report-canvas { width: 100vw !important; max-width: 100vw !important; min-width: unset !important; }
+            #report-wrapper { width: 100%; padding: 0 !important; }
+            #output-section { padding: 0 !important; }
+            #report-canvas > div { padding: 16px !important; }
+            .header-flex-wrapper { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body class="pb-10 selection:bg-purple-300 selection:text-purple-900" data-theme="">
+
+    <div class="fixed top-4 right-4 z-50">
+        <button onclick="toggleTheme()" class="glass-card w-12 h-12 rounded-full flex items-center justify-center hover:scale-110 transition text-xl shadow-lg">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+
+    <!-- 输入部分 -->
+    <div id="input-section" class="container mx-auto px-4 py-8 max-w-4xl transition-all duration-500">
+        <header class="text-center mb-10 relative">
+            <h1 class="text-4xl font-extrabold mb-1" style="font-family: 'Fredoka', sans-serif; color: var(--accent-main)">SillyTavern</h1>
+            <div class="flex flex-col justify-center items-center gap-0 text-[var(--text-primary)]">
+                <h2 class="text-3xl font-black tracking-tighter" style="background: linear-gradient(45deg, var(--svg-grad-stop1), var(--svg-grad-stop2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">MUST EAT</h2>
+                <h2 class="text-3xl font-black tracking-tighter" style="background: linear-gradient(45deg, var(--svg-grad-stop1), var(--svg-grad-stop2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">2025</h2>
+            </div>
+            <div class="mt-2 text-xs opacity-50 font-mono">Tool by Villeay</div>
+        </header>
+
+        <div class="mb-6 glass-card p-6 rounded-3xl">
+            <label class="block text-sm font-bold mb-2 opacity-80">你的名字 (User Name)</label>
+            <input type="text" id="userName" maxlength="7" placeholder="User..." class="custom-input w-full rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[var(--accent-main)] transition">
+        </div>
+
+        <div class="glass-card p-6 rounded-3xl mb-8 border-l-4 relative" style="border-left-color: var(--accent-main);">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold flex items-center gap-2 opacity-90"><i class="fa-solid fa-circle-plus" style="color: var(--accent-main)"></i> <span id="formTitle">添加角色</span></h3>
+                <button onclick="clearFormAndExitEdit()" class="text-xs px-3 py-1 rounded-full border border-[var(--text-secondary)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-400 transition"><i class="fa-solid fa-eraser"></i> 清空</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div class="md:col-span-4 flex flex-col items-center space-y-4 mobile-center-avatar">
+                    <div class="w-32 h-32 rounded-full overflow-hidden bg-black/10 border-2 border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:border-[var(--accent-main)] transition relative group shadow-md" onclick="document.getElementById('charAvatar').click()">
+                        <img id="avatarPreview" src="" class="w-full h-full object-cover hidden">
+                        <div id="avatarPlaceholder" class="text-center opacity-60 group-hover:opacity-100 group-hover:text-[var(--accent-main)]"><i class="fa-solid fa-camera text-2xl mb-1"></i><br><span class="text-[10px]">点击上传</span></div>
+                        <input type="file" id="charAvatar" accept="image/*" class="hidden" onchange="previewImage(this)">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 w-full max-w-xs">
+                        <button onclick="setType('dog')" class="type-selector p-2 rounded-lg border border-gray-500/30 text-xs flex flex-col items-center gap-1 transition opacity-70 hover:opacity-100" id="type-dog"><i class="fa-solid fa-dog"></i> 狗系</button>
+                        <button onclick="setType('cat')" class="type-selector p-2 rounded-lg border border-gray-500/30 text-xs flex flex-col items-center gap-1 transition opacity-70 hover:opacity-100" id="type-cat"><i class="fa-solid fa-cat"></i> 猫系</button>
+                        <button onclick="setType('both')" class="type-selector col-span-2 p-2 rounded-lg border border-gray-500/30 text-xs flex justify-center items-center gap-2 transition opacity-70 hover:opacity-100" id="type-both"><i class="fa-solid fa-shield-dog"></i> 猫狗二象性</button>
+                        <button onclick="setType('none')" class="type-selector col-span-2 p-2 rounded-lg border border-gray-500/30 text-xs flex justify-center items-center gap-2 transition opacity-70 hover:opacity-100 active" id="type-none"><i class="fa-solid fa-ban"></i> 无属性</button>
+                    </div>
+                </div>
+                <div class="md:col-span-8 space-y-3">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1"><input type="text" id="charName" maxlength="7" placeholder="角色名称 (中文5字/英文7字)" class="custom-input w-full rounded-xl p-3 focus:outline-none focus:ring-1 focus:ring-[var(--accent-main)] font-bold"></div>
+                        <div class="sm:w-1/3"><input type="text" id="charAuthor" maxlength="7" placeholder="作者 (可选)" class="custom-input w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent-main)] opacity-80"></div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl bg-[var(--bg-base)]/40 border border-[var(--card-border)]">
+                        <input type="checkbox" id="isGroupCard" onchange="toggleGroupInput()" class="w-4 h-4 rounded text-[var(--accent-main)] focus:ring-[var(--accent-main)] cursor-pointer ml-2">
+                        <label for="isGroupCard" class="text-xs font-medium cursor-pointer select-none opacity-80">是否多人卡?</label>
+                        <div id="groupInputContainer" class="hidden flex-1 animate-[fadeIn_0.3s]"><input type="text" id="subChars" placeholder="内含角色..." class="custom-input w-full rounded-lg p-1 text-xs focus:outline-none bg-transparent border-0 border-b border-gray-500/50"></div>
+                    </div>
+                    <div class="flex items-center space-x-3 bg-[var(--bg-base)]/40 p-2 rounded-xl w-fit px-4 border border-[var(--card-border)]">
+                        <span class="text-xs opacity-60 font-bold">必吃指数</span>
+                        <div id="star-container" class="flex cursor-pointer text-lg gap-1">
+                            <i class="fa-solid fa-star text-gray-500" onclick="setRating(1)"></i><i class="fa-solid fa-star text-gray-500" onclick="setRating(2)"></i><i class="fa-solid fa-star text-gray-500" onclick="setRating(3)"></i><i class="fa-solid fa-star text-gray-500" onclick="setRating(4)"></i><i class="fa-solid fa-star text-gray-500" onclick="setRating(5)"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" id="charTags" placeholder="标签 (空格分割)..." class="custom-input w-full rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent-main)]">
+                        <div class="flex flex-wrap gap-2 mt-2 select-none">
+                            <span class="preset-tag" onclick="addTag('破镜重圆')">破镜重圆</span><span class="preset-tag" onclick="addTag('恨海情天')">恨海情天</span>  <span class="preset-tag" onclick="addTag('青梅竹马')">青梅竹马</span><span class="preset-tag" onclick="addTag('高干')">高干</span><span class="preset-tag" onclick="addTag('校园')">校园</span> <span class="preset-tag" onclick="addTag('骨科')">骨科</span> <span class="preset-tag" onclick="addTag('年上')">年上</span><span class="preset-tag" onclick="addTag('古风')">古风</span> <span class="preset-tag" onclick="addTag('人外')">人外</span><span class="preset-tag" onclick="addTag('ABO')">ABO</span>
+                        </div>
+                    </div>
+                    <textarea id="charReview" rows="3" maxlength="300" placeholder="推荐理由...（不超过300字）" class="custom-input w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent-main)] resize-none"></textarea>
+                </div>
+            </div>
+            <button id="addBtn" onclick="addCharacter()" class="w-full mt-6 text-white font-bold py-3 rounded-xl shadow-lg transition flex justify-center items-center active:scale-95" style="background: linear-gradient(to right, var(--btn-grad-start), var(--btn-grad-end));"><i class="fa-solid fa-plus mr-2"></i> <span id="addBtnText">加入清单😋</span></button>
+            <button id="cancelEditBtn" onclick="cancelEdit()" class="hidden w-full mt-2 text-sm text-[var(--text-secondary)] py-2">取消修改</button>
+        </div>
+
+        <div id="preview-list" class="space-y-4 mb-10"></div>
+
+        <div class="flex gap-3 mb-10">
+            <button onclick="generateReport()" id="generateBtn" class="hidden flex-1 text-white text-xl font-bold py-4 rounded-2xl shadow-xl transition transform hover:scale-[1.01]" style="background: linear-gradient(135deg, var(--accent-main), var(--decoration-blob-2));">生成年度总结报告 <i class="fa-solid fa-wand-magic-sparkles ml-2"></i></button>
+            <button onclick="exportToExcel()" id="exportBtn" class="hidden text-white text-xl font-bold py-4 px-6 rounded-2xl shadow-xl transition transform hover:scale-[1.01]" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fa-solid fa-file-excel"></i></button>
+        </div>
+    </div>
+
+    <!-- 报告输出部分 -->
+    <div id="output-section" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="fixed top-4 left-4 z-50"><button onclick="editAgain()" class="glass-card px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> 返回修改</button></div>
+        <div class="fixed top-4 right-20 z-50"><button onclick="downloadImage()" class="glass-card px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2" style="color: var(--accent-main); border-color: var(--accent-main);"><i class="fa-solid fa-download"></i> 保存图片</button></div>
+
+        <div id="report-wrapper" class="p-2 shadow-2xl rounded-sm bg-black"> 
+            <div id="report-canvas" class="h2c-fix w-full max-w-[800px] min-w-[375px] md:w-[750px] relative overflow-hidden text-[var(--text-primary)]" style="background-color: var(--bg-base);">
+                <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div class="absolute top-0 left-[-10%] w-96 h-96 rounded-full filter blur-3xl opacity-20 animate-blob" style="background-color: var(--decoration-blob-1);"></div>
+                    <div class="absolute top-0 right-[-10%] w-96 h-96 rounded-full filter blur-3xl opacity-20 animate-blob" style="background-color: var(--decoration-blob-2);"></div>
+                </div>
+
+                <div class="relative z-10 p-8 md:p-10 border-[10px]" style="border-color: var(--bg-base);">
+                    <div class="border-b-2 pb-6 mb-8 relative" style="border-color: var(--card-border); min-height: 170px; display: flex; flex-direction: column;">
+                        <div>
+                            <h3 class="h2c-text text-3xl font-extrabold" style="font-family: 'Fredoka', sans-serif; color: var(--accent-main); margin-bottom: 4px; line-height: 1.1 !important;">SillyTavern</h3>
+                            <div class="flex flex-col" style="align-items: flex-start; margin-top: 4px;">
+                                <svg width="320" height="110" viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" style="overflow: visible; display: block;">
+                                    <defs><linearGradient id="titleGradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" style="stop-color: var(--svg-grad-stop1); stop-opacity: 1" /><stop offset="100%" style="stop-color: var(--svg-grad-stop2); stop-opacity: 1" /></linearGradient></defs>
+                                    <text x="0" y="55" font-family="'Inter', sans-serif" font-weight="900" font-size="60" fill="url(#titleGradient)" letter-spacing="-2px">MUST EAT</text>
+                                    <text x="0" y="115" font-family="'Inter', sans-serif" font-weight="900" font-size="60" fill="url(#titleGradient)" letter-spacing="-2px">2025</text>
+                                </svg>
+                                
+                                <div class="h2c-header-bottom">
+                                    <div class="h2c-text header-flex-wrapper">
+                                        <span class="text-2xl md:text-3xl font-bold opacity-90" style="line-height: 1 !important; white-space: nowrap; font-family: 'Inter', 'Noto Sans SC', sans-serif;">必吃榜</span>
+                                        <span class="text-xl opacity-40" style="line-height: 1 !important;">/</span>
+                                        <span class="text-lg opacity-60 font-medium" style="white-space: nowrap !important; line-height: 1.1 !important; font-family: 'Fredoka', 'Noto Sans SC', sans-serif;">ANNUAL REPORT 年度总结</span>
+                                    </div>
+                                    
+                                    <div class="h2c-user-box">
+                                        <div class="h2c-text text-xs opacity-50 uppercase tracking-widest" style="margin-bottom: 2px; line-height: 1 !important;">User</div>
+                                        <div id="report-username" class="h2c-header-username truncate" style="line-height: 1.1 !important; padding-bottom: 2px !important;">User</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="report-grid" class="h2c-grid-container"></div>
+
+                    <div class="mt-10 pt-4 border-t flex justify-between items-center opacity-40 text-[10px] font-mono" style="border-color: var(--card-border);">
+                        <div class="h2c-text">TIME: <span id="report-date"></span></div>
+                        <div class="h2c-text flex items-center gap-2"><span>MADE BY Villeay</span><span>•</span><span>SILLYTAVERN</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let characters = [];
+        let currentRating = 0;
+        let currentType = 'none'; 
+        let currentAvatarBase64 = null;
+        let isDayTheme = false;
+        let editingId = null; 
+
+        document.getElementById('report-date').innerText = new Date().toLocaleDateString('zh-CN');
+
+        function generateDefaultAvatar(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 150; canvas.height = 150;
+            const ctx = canvas.getContext('2d');
+            let bgColor = '#e2e8f0'; let emoji = '🍽️';
+            if (type === 'cat') { bgColor = '#fbcfe8'; emoji = '🐱'; }
+            else if (type === 'dog') { bgColor = '#bae6fd'; emoji = '🐶'; }
+            else if (type === 'both') { bgColor = '#ddd6fe'; emoji = '🦊'; }
+            ctx.fillStyle = bgColor; ctx.fillRect(0, 0, 150, 150);
+            ctx.font = '80px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 75, 80);
+            return canvas.toDataURL('image/png');
+        }
+
+        function addTag(tagName) {
+            const input = document.getElementById('charTags');
+            input.value = input.value.trim() ? input.value + ' ' + tagName : tagName;
+        }
+
+        function toggleTheme() {
+            isDayTheme = !isDayTheme;
+            document.body.setAttribute('data-theme', isDayTheme ? 'day' : '');
+            document.getElementById('theme-icon').className = isDayTheme ? 'fa-solid fa-sun text-yellow-500' : 'fa-solid fa-moon text-purple-400';
+        }
+
+        function toggleGroupInput() {
+            const container = document.getElementById('groupInputContainer');
+            if (document.getElementById('isGroupCard').checked) {
+                container.classList.remove('hidden'); container.classList.add('flex');
+            } else {
+                container.classList.add('hidden'); container.classList.remove('flex');
+            }
+        }
+
+        function setType(type) {
+            currentType = type;
+            document.querySelectorAll('.type-selector').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('type-' + type).classList.add('active');
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    currentAvatarBase64 = e.target.result;
+                    document.getElementById('avatarPreview').src = currentAvatarBase64;
+                    document.getElementById('avatarPreview').classList.remove('hidden');
+                    document.getElementById('avatarPlaceholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function setRating(rating) {
+            currentRating = rating;
+            const stars = document.querySelectorAll('#star-container i');
+            stars.forEach((star, i) => star.style.color = i < rating ? 'var(--star-active)' : 'gray');
+        }
+
+        function resetFormOnly() {
+            document.getElementById('charName').value = ''; document.getElementById('charAuthor').value = '';
+            document.getElementById('charTags').value = ''; document.getElementById('charReview').value = '';
+            document.getElementById('charAvatar').value = ''; document.getElementById('subChars').value = '';
+            document.getElementById('isGroupCard').checked = false; toggleGroupInput();
+            document.getElementById('avatarPreview').src = '';
+            document.getElementById('avatarPreview').classList.add('hidden');
+            document.getElementById('avatarPlaceholder').classList.remove('hidden');
+            currentAvatarBase64 = null; setRating(0); setType('none'); 
+        }
+
+        function exitEditMode() {
+            editingId = null;
+            document.getElementById('formTitle').innerText = '添加角色';
+            document.getElementById('addBtn').innerHTML = '<i class="fa-solid fa-plus mr-2"></i> 加入清单😋';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function clearFormAndExitEdit() { resetFormOnly(); exitEditMode(); }
+        function cancelEdit() { resetFormOnly(); exitEditMode(); }
+
+        function editCharacter(id) {
+            const char = characters.find(c => c.id === id); if (!char) return;
+            editingId = id; 
+            document.getElementById('charName').value = char.name;
+            document.getElementById('charAuthor').value = char.author || '';
+            document.getElementById('charTags').value = char.tags.join(' ');
+            document.getElementById('charReview').value = char.review;
+            document.getElementById('subChars').value = char.subChars || '';
+            document.getElementById('isGroupCard').checked = char.isGroup;
+            toggleGroupInput(); setRating(char.rating); setType(char.type);
+            if (char.avatar && char.avatar.startsWith('data:image')) {
+                currentAvatarBase64 = char.avatar;
+                document.getElementById('avatarPreview').src = char.avatar;
+                document.getElementById('avatarPreview').classList.remove('hidden');
+                document.getElementById('avatarPlaceholder').classList.add('hidden');
+            }
+            document.getElementById('formTitle').innerText = '修改角色';
+            document.getElementById('addBtn').innerHTML = '<i class="fa-solid fa-save mr-2"></i> 保存修改';
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            document.getElementById('input-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function validateNameLength(name) {
+            const hasChinese = /[^\x00-\xff]/.test(name);
+            const maxLength = hasChinese ? 5 : 7;
+            return name.length <= maxLength;
+        }
+
+        function addCharacter() {
+            const name = document.getElementById('charName').value.trim();
+            if (!name) { alert('请输入角色名字！'); return; }
+            
+            if (!validateNameLength(name)) {
+                alert('名字过长！中文限制5个字，英文限制7个字母。');
+                return;
+            }
+
+            const charData = {
+                id: editingId || Date.now(),
+                name, author: document.getElementById('charAuthor').value.trim(),
+                avatar: currentAvatarBase64 || generateDefaultAvatar(currentType),
+                rating: currentRating,
+                tags: document.getElementById('charTags').value.trim().split(/[,，\s]+/).filter(t => t),
+                review: document.getElementById('charReview').value.trim(),
+                type: currentType, isGroup: document.getElementById('isGroupCard').checked,
+                subChars: document.getElementById('subChars').value.trim()
+            };
+            if (editingId) {
+                const idx = characters.findIndex(c => c.id === editingId);
+                if (idx !== -1) characters[idx] = charData;
+                exitEditMode();
+            } else {
+                characters.push(charData);
+            }
+            renderPreviewList(); resetFormOnly();
+            document.getElementById('generateBtn').classList.remove('hidden');
+            document.getElementById('exportBtn').classList.remove('hidden');
+        }
+
+        function removeCharacter(id) {
+            if (confirm('确定删除吗？')) {
+                characters = characters.filter(c => c.id !== id); renderPreviewList();
+                if (characters.length === 0) {
+                    document.getElementById('generateBtn').classList.add('hidden');
+                    document.getElementById('exportBtn').classList.add('hidden');
+                }
+            }
+        }
+
+        function renderPreviewList() {
+            const container = document.getElementById('preview-list');
+            container.innerHTML = '';
+            characters.forEach(char => {
+                const div = document.createElement('div');
+                div.className = 'glass-card p-4 rounded-xl flex items-center gap-4 animate-[fadeIn_0.3s]';
+                div.innerHTML = `<div class="w-12 h-12 rounded-full bg-cover bg-center flex-shrink-0 border" style="background-image: url('${char.avatar}')"></div><div class="flex-grow min-w-0"><div class="flex justify-between items-center"><span class="font-bold truncate">${char.name}</span><div class="flex gap-2"><button onclick="editCharacter(${char.id})" class="text-[var(--accent-main)] text-sm"><i class="fa-solid fa-pen"></i></button><button onclick="removeCharacter(${char.id})" class="text-red-400 text-sm"><i class="fa-solid fa-trash"></i></button></div></div></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function generateReport() {
+            document.getElementById('input-section').classList.add('hidden');
+            document.getElementById('output-section').classList.remove('hidden');
+            document.getElementById('report-username').innerText = document.getElementById('userName').value.trim() || 'Anonymous';
+            const grid = document.getElementById('report-grid'); 
+            grid.innerHTML = '';
+            
+            characters.forEach(char => {
+                let starsHtml = '';
+                for(let i = 0; i < 5; i++) {
+                    starsHtml += `<i class="h2c-star fa-solid fa-star" style="color: ${i < char.rating ? 'var(--star-active)' : 'rgba(128,128,128,0.3)'};"></i>`;
+                }
+                
+                let tagsHtml = '';
+                char.tags.forEach(tag => {
+                    tagsHtml += `<span class="h2c-tag"><span class="h2c-tag-text">#${tag}</span></span>`;
+                });
+                
+                let typeBadge = '';
+                if (char.type !== 'none') {
+                    const icon = char.type === 'both' ? 'fa-shield-dog' : `fa-${char.type}`;
+                    typeBadge = `<div class="h2c-type-badge"><i class="fa-solid ${icon} h2c-type-icon"></i></div>`;
+                }
+                
+                let subCharsHtml = '';
+                if (char.isGroup) {
+                    const displayText = char.subChars ? `内含: ${char.subChars}` : '多人';
+                    subCharsHtml = `
+                        <div class="h2c-subchars">
+                            <i class="fa-solid fa-users h2c-group-icon"></i>
+                            <span class="h2c-subchars-text">${displayText}</span>
+                        </div>`;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'h2c-card';
+                
+                card.innerHTML = `
+                    ${typeBadge}
+                    <div class="h2c-avatar" style="background-image: url('${char.avatar}');"></div>
+                    <div class="h2c-content-wrapper">
+                        <div style="display: flex; align-items: baseline; margin-bottom: 0; min-height: 28px; height: auto; align-items: flex-start; flex-wrap: wrap;">
+                            <span class="h2c-name">${char.name}</span>
+                            ${char.author ? `<span class="h2c-author">@${char.author}</span>` : ''}
+                        </div>
+                        <div class="h2c-stars">${starsHtml}</div>
+                        <div class="h2c-tags">${tagsHtml}</div>
+                        ${subCharsHtml}
+                        <div class="h2c-review"><span class="h2c-review-text">"${char.review || '...'}"</span></div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            window.scrollTo(0, 0);
+        }
+
+        function editAgain() {
+            document.getElementById('output-section').classList.add('hidden');
+            document.getElementById('input-section').classList.remove('hidden');
+        }
+
+        function downloadImage() {
+            const canvasArea = document.getElementById('report-canvas');
+            const btn = document.querySelector('button[onclick="downloadImage()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 处理中...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                const style = document.createElement('style');
+                style.textContent = `
+                    .h2c-fix * { box-sizing: border-box !important; }
+                    .h2c-stars { margin-bottom: 16px !important; }
+                   .h2c-tags { margin-bottom: 8px !important; }
+                   .h2c-subchars { margin-top: 0 !important; display: inline-flex !important; }
+                    .h2c-star, .h2c-tag, .h2c-type-badge i, .h2c-review, .h2c-tag-text, .h2c-type-icon, .h2c-subchars-text, .h2c-review-text, .h2c-group-icon {
+                        line-height: 1 !important; vertical-align: top !important;
+                    }
+                    .h2c-name { height: auto !important; min-height: 28px !important; margin-bottom: 4px !important; display: block !important; white-space: normal !important; }
+                    .h2c-type-badge { top: -5px !important; right: -5px !important; }
+                    .h2c-header-username { line-height: 1.1 !important; padding-bottom: 2px !important; height: auto !important; }
+                    .h2c-review { line-height: 1.4 !important; padding-top: 2px !important; padding-bottom: 2px !important; margin-top: 4px !important; }
+                    .h2c-tag-text { position: relative !important; top: -6px !important; line-height: 1 !important; }
+                    .h2c-type-icon { position: relative !important; top: -10px !important; line-height: 1 !important; }
+                    .h2c-subchars-text { position: relative !important; top: -7px !important; line-height: 1 !important; }
+                    .h2c-group-icon { position: relative !important; top: -6px !important; line-height: 1 !important; }
+                    .h2c-review-text { position: relative !important; top: -10px !important; line-height: 1.4 !important; }
+                    
+                    /* 修复生成的图片中 Header 布局问题 */
+                    .h2c-header-bottom { flex-wrap: wrap !important; }
+                    .h2c-user-box { margin-left: auto !important; flex-shrink: 0 !important; }
+                    .header-flex-wrapper { flex: 1 1 auto !important; min-width: 200px !important; }
+
+                    /* 修复生成的图片中 多人卡换行高度问题 */
+                    .h2c-subchars { height: auto !important; white-space: normal !important; }
+                    .h2c-subchars-text { white-space: normal !important; }
+                `;
+                document.head.appendChild(style);
+                
+                html2canvas(canvasArea, {
+                    backgroundColor: null,
+                    scale: 3,
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: false,
+                    width: canvasArea.offsetWidth,
+                    height: canvasArea.scrollHeight,
+                    windowWidth: canvasArea.scrollWidth,
+                    windowHeight: canvasArea.scrollHeight,
+                    onclone: function(clonedDoc) {
+                        const clonedCanvas = clonedDoc.getElementById('report-canvas');
+                        if (clonedCanvas) {
+                            const textElements = clonedCanvas.querySelectorAll('.h2c-text, .h2c-author, .h2c-review, .h2c-tag, .h2c-star, .h2c-header-username, .h2c-subchars');
+                            textElements.forEach(el => {
+                                el.style.lineHeight = '1.2'; el.style.verticalAlign = 'top'; el.style.transform = 'none'; el.style.position = 'relative'; el.style.top = '0'; el.style.marginTop = '0'; el.style.paddingTop = '0';
+                            });
+                            
+                            const names = clonedCanvas.querySelectorAll('.h2c-name');
+                            names.forEach(n => { n.style.height = 'auto'; n.style.whiteSpace = 'normal'; });
+
+                            const typeIcons = clonedCanvas.querySelectorAll('.h2c-type-icon');
+                            typeIcons.forEach(icon => { icon.style.lineHeight = '1'; icon.style.position = 'relative'; icon.style.top = '-1px'; });
+                            
+                            const tagTexts = clonedCanvas.querySelectorAll('.h2c-tag-text');
+                            tagTexts.forEach(text => { text.style.lineHeight = '1'; text.style.position = 'relative'; text.style.top = '-1px'; });
+                            
+                            const subcharsTexts = clonedCanvas.querySelectorAll('.h2c-subchars-text');
+                            subcharsTexts.forEach(text => { text.style.lineHeight = '1'; text.style.position = 'relative'; text.style.top = '-1px'; });
+                            const groupIcons = clonedCanvas.querySelectorAll('.h2c-group-icon');
+                            groupIcons.forEach(icon => { icon.style.lineHeight = '1'; icon.style.position = 'relative'; icon.style.top = '-1px'; });
+                            
+                            const username = clonedCanvas.querySelector('.h2c-header-username');
+                            if (username) { username.style.lineHeight = '1.1'; username.style.paddingBottom = '2px'; }
+                            
+                            const reviews = clonedCanvas.querySelectorAll('.h2c-review');
+                            reviews.forEach(review => { review.style.lineHeight = '1.4'; review.style.paddingTop = '2px'; review.style.paddingBottom = '2px'; });
+
+                            const reviewTexts = clonedCanvas.querySelectorAll('.h2c-review-text');
+                            reviewTexts.forEach(text => { text.style.lineHeight = '1.4'; text.style.position = 'relative'; text.style.top = '-3px'; });
+                        }
+                    }
+                }).then(canvas => {
+                    document.head.removeChild(style);
+                    const link = document.createElement('a');
+                    link.download = `ST_2025_Summary_${Date.now()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }).catch(error => {
+                    console.error('html2canvas error:', error);
+                    alert('生成图片时出错，请重试');
+                    document.head.removeChild(style);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            }, 300);
+        }
+
+        function exportToExcel() {
+            if (characters.length === 0) return;
+            const data = characters.map((char, i) => ({
+                '序号': i + 1, '角色': char.name, '作者': char.author, '星级': '★'.repeat(char.rating), 
+                '标签': char.tags.join(','), '评价': char.review, '内含角色': char.subChars || (char.isGroup ? '多人' : '')
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "必吃榜");
+            XLSX.writeFile(wb, `ST_2025_Report.xlsx`);
+        }
+    </script>
+</body>
+</html>
